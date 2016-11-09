@@ -14,7 +14,7 @@ aOutput
 		seqno=0
 		create astored_pkt
 		sendpkt(astored_pkt)		
-		Print "A: sending packet #" 
+		Print "A: sending packet 0" 
 		start_timer
 		astate=1
 		
@@ -24,7 +24,7 @@ aOutput
 		create astored_pkt
 
 		sendpkt(astored_pkt)		
-		Print "A: sending packet #" 
+		Print "A: sending packet 1" 
 		
 		start_timer
 		astate=3
@@ -47,7 +47,7 @@ aInput
 		if acknum==0 
 			stop_timer
 			astate=2
-			Print "A: got ACK #"
+			Print "A: got ACK 0"
 	
 	if astate==2
 		
@@ -63,7 +63,7 @@ aInput
 		if acknum==1
 			stop_timer
 			astate=0
-			Print "A: got ACK #"
+			Print "A: got ACK 1"
 		else
 			do nothing	
 		
