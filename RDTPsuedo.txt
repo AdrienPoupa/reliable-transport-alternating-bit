@@ -1,0 +1,98 @@
+					Names of Both MIDN:____________________
+
+global variables
+  astate =0 // can be 0-3, corresponds to state diagram for a/sender (3.15)
+  astored_pkt // saved in case we need to retransmit - for a/sender
+  bstate = 0 // can be 0-1,state diagram for b (3.14)
+  bOnceThru = 0 // A flag to track if this is the first time through the receiver
+  bstored_pkt // saved in case we need to retransmit - for b/sender
+
+aOutput
+
+	if astate==0 
+		calculate checksum
+		seqno=0
+		create astored_pkt
+		sendpkt(astored_pkt)		
+		Print "A: sending packet #" 
+		start_timer
+		astate=1
+		
+	else if astate==2
+		calculate checksum
+		seqno=1
+		create astored_pkt
+
+		sendpkt(astored_pkt)		
+		Print "A: sending packet #" 
+		
+		start_timer
+		astate=3
+	else
+		refuse packet, warn  //timers need to be longer	
+	
+aInput
+
+	if astate==0
+		do nothing
+	if astate==1 
+		if 	pkt is corrupt
+			do nothing
+			Print "A: ACK corrupt"
+		if acknum==1
+
+			do nothing
+			
+			Print "A: got ACK1, we're waiting for ACK 0"	
+		if acknum==0 
+			stop_timer
+			astate=2
+			Print "A: got ACK #"
+	
+	if astate==2
+		
+		do nothing		
+	if astate==3 
+		if pkt is corrupt
+			do nothing
+			Print "A: ACK corrupt"
+		
+		if acknum==0
+			do nothing
+			Print "A: got ACK0, we're waiting for ACK 1"	
+		if acknum==1
+			stop_timer
+			astate=0
+			Print "A: got ACK #"
+		else
+			do nothing	
+		
+		
+aTimerInterrupt
+	Print "A: Timer interrupt, resending packet"
+	
+	sendpkt(astored_pkt)
+	
+	start_timer
+		
+bInput
+	if pkt is corrupt
+		if bOnceThru==1
+			send bstored_pkt
+		else
+			do nothing
+	else
+		if (seqno==0 && bstate==0) || (seqno==1 && bstate==1)
+			deliver data to layer 5
+			Print "B: got packet #"
+			create bstored_pkt
+			sendpkt(bstored_pkt)
+			Print "B: sending ACK #"
+			incr bstate mod 2
+			bOnceThru=1
+		else
+			if bstate==1 || bOnceThru==1
+				send bstored_pkt
+				Print "B: sending ACK #"
+						
+				
