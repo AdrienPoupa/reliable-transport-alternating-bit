@@ -54,14 +54,12 @@ class StudentNetworkSimulator extends NetworkSimulator {
             if (packet.getAcknum() == 1) {
                 System.out.println("A: got ACK1, we're waiting for ACK 0");
             }
-
-            if (packet.getAcknum() == 0) {
+            else if (packet.getAcknum() == 0) {
                 stopTimer(0);
                 astate = 2;
                 System.out.println("A: got ACK 0");
             }
-        }
-        else if (astate == 3) {
+        } else if (astate == 3) {
             if (isPktCorrupted(packet)) {
                 System.out.println("A: ACK corrupt");
             }
@@ -69,8 +67,7 @@ class StudentNetworkSimulator extends NetworkSimulator {
             if (packet.getAcknum() == 0) {
                 System.out.println("A: got ACK0, we're waiting for ACK 1");
             }
-
-            if (packet.getAcknum() == 1) {
+            else if (packet.getAcknum() == 1) {
                 stopTimer(0);
                 astate = 0;
                 System.out.println("A: got ACK 1");
@@ -94,7 +91,8 @@ class StudentNetworkSimulator extends NetworkSimulator {
     // initialization (e.g. of member variables you add to control the state
     // of entity A).
     @Override
-    protected void aInit() {}
+    protected void aInit() {
+    }
 
     // This routine will be called whenever a packet sent from the B-side
     // (i.e. as a result of a toLayer3() being done by an A-side procedure)
@@ -131,7 +129,8 @@ class StudentNetworkSimulator extends NetworkSimulator {
     // initialization (e.g. of member variables you add to control the state
     // of entity B).
     @Override
-    protected void bInit() {}
+    protected void bInit() {
+    }
 
     private int calculateChecksum(String payload, int seqno, int ackno) {
         int singlecharval;
