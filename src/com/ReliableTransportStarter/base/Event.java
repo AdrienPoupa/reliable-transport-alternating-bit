@@ -1,4 +1,4 @@
-package com.ReliableTransportStarter;
+package com.ReliableTransportStarter.base;
 
 public class Event {
     private double time;

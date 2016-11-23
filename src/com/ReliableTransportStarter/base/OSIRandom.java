@@ -1,4 +1,4 @@
-package com.ReliableTransportStarter;
+package com.ReliableTransportStarter.base;
 
 public class OSIRandom {
     private final long seed[] = new long[5];

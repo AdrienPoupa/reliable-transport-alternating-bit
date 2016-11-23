@@ -1,4 +1,4 @@
-package com.ReliableTransportStarter;
+package com.ReliableTransportStarter.base;
 
 import java.awt.Container;
 import java.awt.GridLayout;
@@ -15,7 +15,7 @@ import javax.swing.SpinnerNumberModel;
 public class Project {
     public final static void main(String[] argv) {
 
-        final JFrame frame = new JFrame("Reliable Tranport Sim");
+        final JFrame frame = new JFrame("Reliable Tranport Simulator - Base");
 
         // # msgs to Simulate
         final SpinnerNumberModel nummsgs = new SpinnerNumberModel(10, 2, 30, 1);

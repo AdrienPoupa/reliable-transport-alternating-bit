@@ -1,4 +1,4 @@
-package com.ReliableTransportStarter;
+package com.ReliableTransportStarter.base;
 
 class StudentNetworkSimulator extends NetworkSimulator {
 
