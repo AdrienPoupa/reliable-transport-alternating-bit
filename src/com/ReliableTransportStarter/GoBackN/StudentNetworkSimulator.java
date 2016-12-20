@@ -4,111 +4,13 @@ import java.util.*;
 import java.io.*;
 import java.lang.System;
 
-/* StudentNetworkSimulator.java
- * Brandon Charlesworth
- * bjcworth@bu.edu
- * U20809812
- */
-
-
 public class StudentNetworkSimulator extends NetworkSimulator
 {
-    /*
-     * Predefined Constants (static member variables):
-     *
-     *   int MAXDATASIZE : the maximum size of the Message data and
-     *                     Packet payload
-     *
-     *   int A           : a predefined integer that represents entity A
-     *   int B           : a predefined integer that represents entity B 
-     *
-     * Predefined Member Methods:
-     *
-     *  void stopTimer(int entity): 
-     *       Stops the timer running at "entity" [A or B]
-     *  void startTimer(int entity, double increment): 
-     *       Starts a timer running at "entity" [A or B], which will expire in
-     *       "increment" time units, causing the interrupt handler to be
-     *       called.  You should only call this with A.
-     *  void toLayer3(int callingEntity, Packet p)
-     *       Puts the packet "p" into the network from "callingEntity" [A or B]
-     *  void toLayer5(String dataSent)
-     *       Passes "dataSent" up to layer 5
-     *  double getTime()
-     *       Returns the current time in the simulator.  Might be useful for
-     *       debugging.
-     *  int getTraceLevel()
-     *       Returns TraceLevel
-     *  void printEventList()
-     *       Prints the current event list to stdout.  Might be useful for
-     *       debugging, but probably not.
-     *
-     *
-     *  Predefined Classes:
-     *
-     *  Message: Used to encapsulate a message coming from layer 5
-     *    Constructor:
-     *      Message(String inputData): 
-     *          creates a new Message containing "inputData"
-     *    Methods:
-     *      boolean setData(String inputData):
-     *          sets an existing Message's data to "inputData"
-     *          returns true on success, false otherwise
-     *      String getData():
-     *          returns the data contained in the message
-     *  Packet: Used to encapsulate a packet
-     *    Constructors:
-     *      Packet (Packet p):
-     *          creates a new Packet that is a copy of "p"
-     *      Packet (int seq, int ack, int check, String newPayload)
-     *          creates a new Packet with a sequence field of "seq", an
-     *          ack field of "ack", a checksum field of "check", and a
-     *          payload of "newPayload"
-     *      Packet (int seq, int ack, int check)
-     *          create a new Packet with a sequence field of "seq", an
-     *          ack field of "ack", a checksum field of "check", and
-     *          an empty payload
-     *    Methods:
-     *      boolean setSeqnum(int n)
-     *          sets the Packet's sequence field to "n"
-     *          returns true on success, false otherwise
-     *      boolean setAcknum(int n)
-     *          sets the Packet's ack field to "n"
-     *          returns true on success, false otherwise
-     *      boolean setChecksum(int n)
-     *          sets the Packet's checksum to "n"
-     *          returns true on success, false otherwise
-     *      boolean setPayload(String newPayload)
-     *          sets the Packet's payload to "newPayload"
-     *          returns true on success, false otherwise
-     *      int getSeqnum()
-     *          returns the contents of the Packet's sequence field
-     *      int getAcknum()
-     *          returns the contents of the Packet's ack field
-     *      int getChecksum()
-     *          returns the checksum of the Packet
-     *      String getPayload()
-     *          returns the Packet's payload
-     *
-     */
-
-    /*   Please use the following variables in your routines.
-     *   int WindowSize  : the window size
-     *   double RxmtInterval   : the retransmission timeout
-     *   int LimitSeqNo  : when sequence number reaches this value, it wraps around
-     */
-
     public static final int FirstSeqNo = 1;
     private int WindowSize;
     private double RxmtInterval;
     private int LimitSeqNo;
-    
-    // Add any necessary class variables here.  Remember, you cannot use
-    // these variables to send messages error free!  They can only hold
-    // state information for A or B.
-    // Also add any necessary methods (e.g. checksum of a String)
-    
-    
+
     // window buffer for tracking sent packets
     Packet[] buffer;
     
@@ -117,7 +19,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
     // double array for tracking sent and ack times
     double[] tsent;
     double[] tackd;
-   // int var for tracking next seq # A will send to B
+    // int var for tracking next seq # A will send to B
     private int nextseq = FirstSeqNo;
     // int var for keeping track of base of the sending window
     private int base = 1;
@@ -373,7 +275,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
     		// sum the list
     		sum += rtt.get(i);
     	}
-    	// divide sum by number of times to get avrg rtt
+    	// divide sum by number of times to get average rtt
     	artt = sum/rtt.size();
     	System.out.println("sent: " + sent);
     	System.out.println("retransmitted: " + retrans);

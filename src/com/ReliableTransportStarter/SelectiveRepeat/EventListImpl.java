@@ -1,74 +1,54 @@
 package com.ReliableTransportStarter.SelectiveRepeat;
 
-/**
- * Created by Yigang on 10/27/2015.
- */
-
 import java.util.Vector;
 
+public class EventListImpl implements EventList {
+    private final Vector<Event> data;
 
-public class EventListImpl implements EventList
-{
-    private Vector<Event> data;
-
-    public EventListImpl()
-    {
+    public EventListImpl() {
         data = new Vector<Event>();
     }
 
-    public boolean add(Event e)
-    {
+    public boolean add(Event e) {
         data.addElement(e);
         return true;
     }
 
-    public Event removeNext()
-    {
+    public Event removeNext() {
         if (data.isEmpty())
-        {
             return null;
-        }
 
         int firstIndex = 0;
-        double first = ((Event)data.elementAt(firstIndex)).getTime();
+        double first = (data.elementAt(firstIndex)).getTime();
         for (int i = 0; i < data.size(); i++)
-        {
-            if (((Event)data.elementAt(i)).getTime() < first)
-            {
-                first = ((Event)data.elementAt(i)).getTime();
+            if ((data.elementAt(i)).getTime() < first) {
+                first = (data.elementAt(i)).getTime();
                 firstIndex = i;
             }
-        }
 
-        Event next = (Event)data.elementAt(firstIndex);
+        final Event next = data.elementAt(firstIndex);
         data.removeElement(next);
 
         return next;
     }
 
-    public String toString()
-    {
+    public String toString() {
         return data.toString();
     }
 
-    public Event removeTimer(int entity)
-    {
+    public Event removeTimer(int entity) {
         int timerIndex = -1;
         Event timer = null;
 
         for (int i = 0; i < data.size(); i++)
-        {
-            if ((((Event)(data.elementAt(i))).getType() == NetworkSimulator.TIMERINTERRUPT) &&
-                    (((Event)(data.elementAt(i))).getEntity() == entity))
-            {
+            if ((((data.elementAt(i))).getType() == NetworkSimulator.TIMERINTERRUPT)
+                    && (((data.elementAt(i))).getEntity() == entity)) {
                 timerIndex = i;
                 break;
             }
-        }
 
-        if (timerIndex != -1)
-        {
-            timer = (Event)(data.elementAt(timerIndex));
+        if (timerIndex != -1) {
+            timer = (data.elementAt(timerIndex));
             data.removeElement(timer);
         }
 
@@ -76,17 +56,12 @@ public class EventListImpl implements EventList
 
     }
 
-    public double getLastPacketTime(int entityTo)
-    {
+    public double getLastPacketTime(int entityTo) {
         double time = 0;
         for (int i = 0; i < data.size(); i++)
-        {
-            if ((((Event)(data.elementAt(i))).getType() == NetworkSimulator.FROMLAYER3) &&
-                    (((Event)(data.elementAt(i))).getEntity() == entityTo))
-            {
-                time = ((Event)(data.elementAt(i))).getTime();
-            }
-        }
+            if ((((data.elementAt(i))).getType() == NetworkSimulator.FROMLAYER3)
+                    && (((data.elementAt(i))).getEntity() == entityTo))
+                time = ((data.elementAt(i))).getTime();
 
         return time;
     }

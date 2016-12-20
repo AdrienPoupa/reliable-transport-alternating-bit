@@ -1,8 +1,5 @@
 package com.ReliableTransportStarter.SelectiveRepeat;
 
-/**
- * Created by Yigang on 11/4/2015.
- */
 public class Timer
 {
     private double sndRTT = 0;

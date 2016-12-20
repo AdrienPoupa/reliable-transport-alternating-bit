@@ -2,9 +2,6 @@ package com.ReliableTransportStarter.SelectiveRepeat;
 
 import java.util.ArrayList;
 
-/**
- * Created by Yigang on 11/1/2015.
- */
 public class StudentNetworkSimulator extends NetworkSimulator
 {
     public static final int FirstSeqNo = 0;
@@ -12,20 +9,16 @@ public class StudentNetworkSimulator extends NetworkSimulator
     private double RxmtInterval;
     private int LimitSeqNo;
 
-    // Add any necessary class variables here.  Remember, you cannot use
-    // these variables to send messages error free!  They can only hold
-    // state information for A or B.
-    // Also add any necessary methods (e.g. checksum of a String)
     int A_Application = 0;
     int A_Transition = 0;
     int B_Application = 0;
     int B_Transition = 0;
 
-    //Current packet for each entity
+    // Current packet for each entity
     private Packet pktFromA;
     private Packet pktFromB;
 
-    //For Sender
+    // For Sender
     private int head, tail;
     private int snd_base;
     private int nextSeqNum;
@@ -33,7 +26,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
     private ArrayList<Packet> send_buffer;
     private int timeoutCount;
 
-    //For Receiver
+    // For Receiver
     private int rcv_base;
     private int expectedSeqNum;
     private int lastRcvSeqNum;
@@ -41,16 +34,14 @@ public class StudentNetworkSimulator extends NetworkSimulator
     private boolean outoforder;
     private Packet[] rcv_buffer;
 
-
-    //-----------------------Statistics---------------------------//
     private double totaltime;
     private ArrayList<Double> timeline = new ArrayList<Double>();
 
-    //Total packets has been sent for each entity
+    // Total packets has been sent for each entity
     private int Asend = 0;
     private int Bsend = 0;
 
-    //ACKed packets number
+    // ACKed packets number
     private int ACKed = 0;
 
     //Variables for counting loss and corruption packets and rate
@@ -165,7 +156,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
                 timeoutCount = 0;
                 head++;
 
-                while (Sender_Window[(iter - 1) % WindowSize].getSeqNum() != -1 && Sender_Window[(iter - 1) % WindowSize].getAck() == true)
+                while (Sender_Window[(iter - 1) % WindowSize].getSeqNum() != -1 && Sender_Window[(iter - 1) % WindowSize].getAck())
                 {
                     Sender_Window[(iter - 1) % WindowSize].setSeqNum(-1);
                     Sender_Window[(iter - 1) % WindowSize].setAck(false);
@@ -241,7 +232,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
             if(temp == send_buffer.size())
                 break;
 
-            if(Sender_Window[(snd_base+i-1) % WindowSize].getSeqNum() != -1 && Sender_Window[(snd_base+i-1) % WindowSize].getAck() == false)
+            if(Sender_Window[(snd_base+i-1) % WindowSize].getSeqNum() != -1 && !Sender_Window[(snd_base+i-1) % WindowSize].getAck())
             {
                 toLayer3(A, send_buffer.get(temp));
 
@@ -394,7 +385,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
         avgComTime = sumCom / timerLine.size();
 
         System.out.println();
-        System.out.println("Simulation_done.");
+        System.out.println("Simulation finished.");
         System.out.println("Protocol: SR result:");
 
         System.out.println(A_Application + " packets sent from application layer of the sender.");
@@ -407,7 +398,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
         System.out.println("Average RTT: " + avgRTT);
         System.out.println("Average communication time: " + avgComTime);
 
-        //System.out.println("ACKed packets: " + ACKed);
+        System.out.println("ACKnowledged packets: " + ACKed);
 
         System.out.println("Retransmission time: " + retNum);
         System.out.println("Corrupt packet number: " + corrupt);
