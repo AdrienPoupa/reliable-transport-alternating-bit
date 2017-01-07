@@ -44,7 +44,7 @@ public abstract class NetworkSimulator {
 
     protected abstract void bInit();
 
-    protected abstract void Simulation_done();
+    protected abstract void simulationFinished();
 
     public NetworkSimulator(int numMessages, double loss, double corrupt,
                             double avgDelay, int trace, int seed) {
@@ -153,7 +153,7 @@ public abstract class NetworkSimulator {
         }
 
         System.out.println("Simulator terminated at time " + getTime());
-        Simulation_done();
+        simulationFinished();
         try {
             outFile.flush();
             outFile.close();

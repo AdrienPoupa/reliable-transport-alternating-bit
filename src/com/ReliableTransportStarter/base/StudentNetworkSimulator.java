@@ -2,15 +2,120 @@ package com.ReliableTransportStarter.base;
 
 class StudentNetworkSimulator extends NetworkSimulator {
 
-    private int astate = 0;
-    private int bstate = 0;
-    private int bOnceThru = 0;
-    private Packet astored_pkt;
-    private Packet bstored_pkt;
+    /*
+     * Predefined Constants (static member variables):
+     *
+     *   int MAXDATASIZE : the maximum size of the Message data and
+     *                     Packet payload
+     *
+     *   int A           : a predefined integer that represents entity A
+     *   int B           : a predefined integer that represents entity B
+     *
+     * Predefined Member Methods:
+     *
+     *  void stopTimer(int entity):
+     *       Stops the timer running at "entity" [A or B]
+     *  void startTimer(int entity, double increment):
+     *       Starts a timer running at "entity" [A or B], which will expire in
+     *       "increment" time units, causing the interrupt handler to be
+     *       called.  You should only call this with A.
+     *  void toLayer3(int callingEntity, Packet p)
+     *       Puts the packet "p" into the network from "callingEntity" [A or B]
+     *  void toLayer5(String dataSent)
+     *       Passes "dataSent" up to layer 5
+     *  double getTime()
+     *       Returns the current time in the simulator.  Might be useful for
+     *       debugging.
+     *  int getTraceLevel()
+     *       Returns TraceLevel
+     *  void printEventList()
+     *       Prints the current event list to stdout.  Might be useful for
+     *       debugging, but probably not.
+     *
+     *
+     *  Predefined Classes:
+     *
+     *  Message: Used to encapsulate a message coming from layer 5
+     *    Constructor:
+     *      Message(String inputData):
+     *          creates a new Message containing "inputData"
+     *    Methods:
+     *      boolean setData(String inputData):
+     *          sets an existing Message's data to "inputData"
+     *          returns true on success, false otherwise
+     *      String getData():
+     *          returns the data contained in the message
+     *  Packet: Used to encapsulate a packet
+     *    Constructors:
+     *      Packet (Packet p):
+     *          creates a new Packet that is a copy of "p"
+     *      Packet (int seq, int ack, int check, String newPayload)
+     *          creates a new Packet with a sequence field of "seq", an
+     *          ack field of "ack", a checksum field of "check", and a
+     *          payload of "newPayload"
+     *      Packet (int seq, int ack, int check)
+     *          chreate a new Packet with a sequence field of "seq", an
+     *          ack field of "ack", a checksum field of "check", and
+     *          an empty payload
+     *    Methods:
+     *      boolean setSeqnum(int n)
+     *          sets the Packet's sequence field to "n"
+     *          returns true on success, false otherwise
+     *      boolean setAcknum(int n)
+     *          sets the Packet's ack field to "n"
+     *          returns true on success, false otherwise
+     *      boolean setChecksum(int n)
+     *          sets the Packet's checksum to "n"
+     *          returns true on success, false otherwise
+     *      boolean setPayload(String newPayload)
+     *          sets the Packet's payload to "newPayload"
+     *          returns true on success, false otherwise
+     *      int getSeqnum()
+     *          returns the contents of the Packet's sequence field
+     *      int getAcknum()
+     *          returns the contents of the Packet's ack field
+     *      int getChecksum()
+     *          returns the checksum of the Packet
+     *      int getPayload()
+     *          returns the Packet's payload
+     *
+     */
 
-    // constructor
-    StudentNetworkSimulator(int numMessages, double loss, double corrupt, double avgDelay, int trace, int seed, int winsize, double delay) {
+    /*   PLEASE USE THE FOLLOWING VARIABLES IN YOUR ROUTINES AS APPROPRIATE.
+     *   int WindowSize  : the window size
+     *   double RxmtInterval   : the retransmission timeout
+     *   int LimitSeqNo  : when sequence number reaches this value, it wraps around
+     */
+
+    public static final int FirstSeqNo = 0;
+    private int WindowSize;
+    private double RxmtInterval;
+    private int LimitSeqNo;
+
+    // Add any necessary class variables here.  Remember, you cannot use
+    // these variables to send messages error free!  They can only hold
+    // state information for A or B.
+
+    private int aState = 0;
+    private int bState = 0;
+    private int bOnceThru = 0;
+    private Packet aPacket;
+    private Packet bPacket;
+
+    // This is the constructor.  Don't touch!
+    public StudentNetworkSimulator(int numMessages,
+                                   double loss,
+                                   double corrupt,
+                                   double avgDelay,
+                                   int trace,
+                                   int seed,
+                                   int winsize,
+                                   double delay)
+    {
         super(numMessages, loss, corrupt, avgDelay, trace, seed);
+        WindowSize = winsize;
+        LimitSeqNo = winsize+1;
+        RxmtInterval = delay;
     }
 
     // This routine will be called whenever the upper layer at the sender [A]
@@ -19,23 +124,45 @@ class StudentNetworkSimulator extends NetworkSimulator {
     // the receiving upper layer.
     @Override
     protected void aOutput(Message message) {
-        if (astate == 0) {
+        // If we are in state 0
+        if (aState == 0) {
+            // Compute the checksum
             int chksum = calculateChecksum(message.getData(), 0, 0);
-            astored_pkt = new Packet(0, 0, chksum, message.getData());
-            toLayer3(0, astored_pkt);
+
+            // Create the non-acknowledged packet
+            aPacket = new Packet(0, 0, chksum, message.getData());
+
+            // Send the packet to layer 3
+            toLayer3(0, aPacket);
+
             System.out.println("A: sending packet 0 " + message.getData());
+
+            // Start the timer
             startTimer(0, 100.0);
-            astate = 1;
+
+            // Change current state
+            aState = 1;
         }
-        else if (astate == 2) {
+        // If we are in state 2
+        else if (aState == 2) {
+            // Compute the checksum
             int chksum = calculateChecksum(message.getData(), 1, 1);
-            astored_pkt = new Packet(1, 1, chksum, message.getData());
-            toLayer3(0, astored_pkt);
+
+            // Create the acknowledged packet
+            aPacket = new Packet(1, 1, chksum, message.getData());
+
+            // Send the packet to layer 3
+            toLayer3(0, aPacket);
             System.out.println("A: sending packet 1 " + message.getData());
+
+            // Start the timer
             startTimer(0, 100.0);
-            astate = 3;
+
+            // Change current state
+            aState = 3;
         }
         else {
+            // Timeout, warn the user
             System.out.println("Timeout ! Timers need to be longer");
         }
     }
@@ -44,32 +171,52 @@ class StudentNetworkSimulator extends NetworkSimulator {
     // (i.e. as a result of a toLayer3() being done by a B-side procedure)
     // arrives at the A-side. "packet" is the (possibly corrupted) packet
     // sent from the B-side.
-    @Override
     protected void aInput(Packet packet) {
-        if (astate == 1) {
+        // Cases 0 and 2 do nothing, hence their absence
+
+        // If we are in state 1
+        if (aState == 1) {
+
+            // The packet is corrupt
             if (isPktCorrupted(packet)) {
                 System.out.println("A: ACK corrupt");
             }
 
+            // We received the first acknowledgement
             if (packet.getAcknum() == 1) {
                 System.out.println("A: got ACK1, we're waiting for ACK 0");
             }
+            // We received the second acknowledgement
             else if (packet.getAcknum() == 0) {
+                // We're done, stop the timer
                 stopTimer(0);
-                astate = 2;
+
+                // Change current state
+                aState = 2;
+
                 System.out.println("A: got ACK 0");
             }
-        } else if (astate == 3) {
+        }
+        // If we are in state 3
+        else if (aState == 3) {
+
+            // The packet is corrupt
             if (isPktCorrupted(packet)) {
                 System.out.println("A: ACK corrupt");
             }
 
+            // We received the first acknowledgement
             if (packet.getAcknum() == 0) {
                 System.out.println("A: got ACK0, we're waiting for ACK 1");
             }
+            // We received the second acknowledgement
             else if (packet.getAcknum() == 1) {
+                // We're done, stop the timer
                 stopTimer(0);
-                astate = 0;
+
+                // Change current state
+                aState = 0;
+
                 System.out.println("A: got ACK 1");
             }
         }
@@ -79,10 +226,13 @@ class StudentNetworkSimulator extends NetworkSimulator {
     // timer interrupt). You'll probably want to use this routine to control
     // the retransmission of packets. See startTimer() and stopTimer(), above,
     // for how the timer is started and stopped.
-    @Override
     protected void aTimerInterrupt() {
         System.out.println("A: Timer interrupt, resending packet");
-        toLayer3(0, astored_pkt);
+
+        // Resend the packet
+        toLayer3(0, aPacket);
+
+        // Reset the timer
         startTimer(0, 100.0);
     }
 
@@ -90,36 +240,42 @@ class StudentNetworkSimulator extends NetworkSimulator {
     // routines are called. It can be used to do any required
     // initialization (e.g. of member variables you add to control the state
     // of entity A).
-    @Override
-    protected void aInit() {
+    protected void aInit()
+    {
+        // You probably won't need to put any code in this method.  It is from another assignment.
     }
 
     // This routine will be called whenever a packet sent from the B-side
     // (i.e. as a result of a toLayer3() being done by an A-side procedure)
     // arrives at the B-side. "packet" is the (possibly corrupted) packet
     // sent from the A-side.
-    @Override
     protected void bInput(Packet packet) {
+        // If we have a corrupted packet
         if (isPktCorrupted(packet)) {
+            // This is not the first time we see this packet: send it back to layer 3
             if (bOnceThru == 1) {
-                toLayer3(1, bstored_pkt);
+                toLayer3(1, bPacket);
             }
         }
-        else if ((packet.getSeqnum() == 0 && bstate == 0) || (packet.getSeqnum() == 1 && bstate == 1)) {
+        else if ((packet.getSeqnum() == 0 && bState == 0) || (packet.getSeqnum() == 1 && bState == 1)) {
+            // Packet not corrupted: send it to layer 5
             toLayer5(packet.getPayload());
             System.out.println("B: got packet " + packet.getSeqnum());
 
-            bstored_pkt = new Packet(packet);
-            toLayer3(1, bstored_pkt);
+            // Create the acknowledgement packet
+            bPacket = new Packet(packet);
+            toLayer3(1, bPacket);
             System.out.println("B: send ACK " + packet.getAcknum());
-            bstate = (bstate + 1) % 2;
+            bState = (bState + 1) % 2;
 
+            // Flag the packet if needed
             if (packet.getSeqnum() == 0) {
                 bOnceThru = 1;
             }
         }
-        else if (bstate == 1 || bOnceThru == 1) {
-            toLayer3(1, bstored_pkt);
+        else if (bState == 1 || bOnceThru == 1) {
+            // Packet with state 1 and already went through: send acknowledgement to layer 3
+            toLayer3(1, bPacket);
             System.out.println("B: sending ACK " + packet.getAcknum());
         }
     }
@@ -128,8 +284,9 @@ class StudentNetworkSimulator extends NetworkSimulator {
     // routines are called. It can be used to do any required
     // initialization (e.g. of member variables you add to control the state
     // of entity B).
-    @Override
-    protected void bInit() {
+    protected void bInit()
+    {
+        // You probably won't need to put any code in this method.  It is from another assignment.
     }
 
     private int calculateChecksum(String payload, int seqno, int ackno) {

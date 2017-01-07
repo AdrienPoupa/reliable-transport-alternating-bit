@@ -2,59 +2,59 @@ package com.ReliableTransportStarter.SelectiveRepeat;
 
 public class Timer
 {
-    private double sndRTT = 0;
-    private double rcvRTT = 0;
-    private double sndCom = 0;
-    private double rcvCom = 0;
-    private int seqNum = -1;
+    private double sendRTT = 0;
+    private double receiveRTT = 0;
+    private double sendCom = 0;
+    private double receiveCom = 0;
+    private int sequenceNumber = -1;
 
-    public double getSndRTT()
+    public double getSendRTT()
     {
-        return this.sndRTT;
+        return this.sendRTT;
     }
 
-    public double getRcvRTT()
+    public double getReceiveRTT()
     {
-        return this.rcvRTT;
+        return this.receiveRTT;
     }
 
-    public double getSndCom()
+    public double getSendCom()
     {
-        return this.sndCom;
+        return this.sendCom;
     }
 
-    public double getRcvCom()
+    public double getReceiveCom()
     {
-        return this.rcvCom;
+        return this.receiveCom;
     }
 
-    public int getSeqNum()
+    public int getSequenceNumber()
     {
-        return this.seqNum;
+        return this.sequenceNumber;
     }
 
-    public void setSndRTT(double sr)
+    public void setSendRTT(double sendRTT)
     {
-        this.sndRTT = sr;
+        this.sendRTT = sendRTT;
     }
 
-    public void setRcvRTT(double rr)
+    public void setReceiveRTT(double receiveRtt)
     {
-        this.rcvRTT = rr;
+        this.receiveRTT = receiveRtt;
     }
 
-    public void setSndCom(double sc)
+    public void setSendCom(double sendCom)
     {
-        this.sndCom = sc;
+        this.sendCom = sendCom;
     }
 
-    public void setRcvCom(double rc)
+    public void setReceiveCom(double receiveCom)
     {
-        this.rcvCom = rc;
+        this.receiveCom = receiveCom;
     }
 
-    public void setSeqNum(int sn)
+    public void setSequenceNumber(int sequenceNumber)
     {
-        this.seqNum = sn;
+        this.sequenceNumber = sequenceNumber;
     }
 }

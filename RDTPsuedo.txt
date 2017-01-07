@@ -1,4 +1,4 @@
-					Names of Both MIDN:____________________
+					Names of Both MIDN: BEAUJEAN - POUPA
 
 global variables
   astate =0 // can be 0-3, corresponds to state diagram for a/sender (3.15)

@@ -1,137 +1,200 @@
 package com.ReliableTransportStarter.SelectiveRepeat;
 
-import java.util.ArrayList;
+import java.util.*;
 
 public class StudentNetworkSimulator extends NetworkSimulator
 {
+    /*
+     * Predefined Constants (static member variables):
+     *
+     *   int MAXDATASIZE : the maximum size of the Message data and
+     *                     Packet payload
+     *
+     *   int A           : a predefined integer that represents entity A
+     *   int B           : a predefined integer that represents entity B
+     *
+     * Predefined Member Methods:
+     *
+     *  void stopTimer(int entity):
+     *       Stops the timer running at "entity" [A or B]
+     *  void startTimer(int entity, double increment):
+     *       Starts a timer running at "entity" [A or B], which will expire in
+     *       "increment" time units, causing the interrupt handler to be
+     *       called.  You should only call this with A.
+     *  void toLayer3(int callingEntity, Packet p)
+     *       Puts the packet "p" into the network from "callingEntity" [A or B]
+     *  void toLayer5(String dataSent)
+     *       Passes "dataSent" up to layer 5
+     *  double getTime()
+     *       Returns the current time in the simulator.  Might be useful for
+     *       debugging.
+     *  int getTraceLevel()
+     *       Returns TraceLevel
+     *  void printEventList()
+     *       Prints the current event list to stdout.  Might be useful for
+     *       debugging, but probably not.
+     *
+     *
+     *  Predefined Classes:
+     *
+     *  Message: Used to encapsulate a message coming from layer 5
+     *    Constructor:
+     *      Message(String inputData):
+     *          creates a new Message containing "inputData"
+     *    Methods:
+     *      boolean setData(String inputData):
+     *          sets an existing Message's data to "inputData"
+     *          returns true on success, false otherwise
+     *      String getData():
+     *          returns the data contained in the message
+     *  Packet: Used to encapsulate a packet
+     *    Constructors:
+     *      Packet (Packet p):
+     *          creates a new Packet that is a copy of "p"
+     *      Packet (int seq, int ack, int check, String newPayload)
+     *          creates a new Packet with a sequence field of "seq", an
+     *          ack field of "ack", a checksum field of "check", and a
+     *          payload of "newPayload"
+     *      Packet (int seq, int ack, int check)
+     *          chreate a new Packet with a sequence field of "seq", an
+     *          ack field of "ack", a checksum field of "check", and
+     *          an empty payload
+     *    Methods:
+     *      boolean setSeqnum(int n)
+     *          sets the Packet's sequence field to "n"
+     *          returns true on success, false otherwise
+     *      boolean setAcknum(int n)
+     *          sets the Packet's ack field to "n"
+     *          returns true on success, false otherwise
+     *      boolean setChecksum(int n)
+     *          sets the Packet's checksum to "n"
+     *          returns true on success, false otherwise
+     *      boolean setPayload(String newPayload)
+     *          sets the Packet's payload to "newPayload"
+     *          returns true on success, false otherwise
+     *      int getSeqnum()
+     *          returns the contents of the Packet's sequence field
+     *      int getAcknum()
+     *          returns the contents of the Packet's ack field
+     *      int getChecksum()
+     *          returns the checksum of the Packet
+     *      int getPayload()
+     *          returns the Packet's payload
+     *
+     */
+
+    /*   PLEASE USE THE FOLLOWING VARIABLES IN YOUR ROUTINES AS APPROPRIATE.
+     *   int WindowSize  : the window size
+     *   double RxmtInterval   : the retransmission timeout
+     *   int LimitSeqNo  : when sequence number reaches this value, it wraps around
+     */
+
     public static final int FirstSeqNo = 0;
     private int WindowSize;
     private double RxmtInterval;
     private int LimitSeqNo;
 
-    int A_Application = 0;
-    int A_Transition = 0;
-    int B_Application = 0;
-    int B_Transition = 0;
+    // Add any necessary class variables here.  Remember, you cannot use
+    // these variables to send messages error free!  They can only hold
+    // state information for A or B.
+
+    private int aApplication = 0;
+    private int aTransition = 0;
+    private int bApplication = 0;
+    private int bTransition = 0;
 
     // Current packet for each entity
-    private Packet pktFromA;
-    private Packet pktFromB;
+    private Packet packetFromA;
+    private Packet packetFromB;
 
     // For Sender
-    private int head, tail;
-    private int snd_base;
+    private int head;
+    private int tail;
+    private int sndBase;
     private int nextSeqNum;
-    private ACKpkt[] Sender_Window;
-    private ArrayList<Packet> send_buffer;
+    private ACKpkt[] senderWindow;
+    private ArrayList<Packet> sendBuffer;
     private int timeoutCount;
 
     // For Receiver
-    private int rcv_base;
-    private int expectedSeqNum;
-    private int lastRcvSeqNum;
-    private int bufferSize;
-    private boolean outoforder;
-    private Packet[] rcv_buffer;
-
-    private double totaltime;
-    private ArrayList<Double> timeline = new ArrayList<Double>();
-
-    // Total packets has been sent for each entity
-    private int Asend = 0;
-    private int Bsend = 0;
+    private int rcvBase;
+    private Packet[] rcvBuffer;
 
     // ACKed packets number
     private int ACKed = 0;
 
-    //Variables for counting loss and corruption packets and rate
+    // Variables for counting loss and corruption packets and rate
     private int corrupt = 0;
 
-    //Variables for counting average RTT
-    private double AsendRTT = 0;
-    private double ArcvRTT = 0;
-    private double avgRTT = 0;
-    private ArrayList<Double> RTT = new ArrayList<Double>();
-
-    //Variables for counting average communication time for each packet
-    private double AsendCom = 0;
-    private double ArcvCom = 0;
-    private double avgComTime = 0;
-    private ArrayList<Double> avg_ComTime = new ArrayList<Double>();
-
-    //Variables for counting average retransmission time
+    // Variables for counting average retransmission time
     private int retNum = 0;
-    private double retTimer = 0;
-    private ArrayList<Double> ret_Timer = new ArrayList<Double>();
 
-    //Timer
-    //private  timer;
+    // Timer
     private ArrayList<Timer> timerLine = new ArrayList<>();
 
-
-
     // This is the constructor.  Don't touch!
-    public StudentNetworkSimulator(int numMessages, double loss, double corrupt,
-                                   double avgDelay, int trace, int seed,
-                                   int winsize, double delay)
+    public StudentNetworkSimulator(int numMessages,
+                                   double loss,
+                                   double corrupt,
+                                   double avgDelay,
+                                   int trace,
+                                   int seed,
+                                   int winsize,
+                                   double delay)
     {
         super(numMessages, loss, corrupt, avgDelay, trace, seed);
         WindowSize = winsize;
-        LimitSeqNo = winsize+1;
+        LimitSeqNo = winsize+ 1;
         RxmtInterval = delay;
     }
-
 
     // This routine will be called whenever the upper layer at the sender [A]
     // has a message to send.  It is the job of your protocol to insure that
     // the data in such a message is delivered in-order, and correctly, to
     // the receiving upper layer.
     protected void aOutput(Message message) {
-        System.out.println("aOutput start.");
-
-        A_Application++;
+        aApplication++;
         int checksum = 0;
 
-        //Set packet
-        pktFromA.setSeqnum(nextSeqNum);
-        pktFromA.setAcknum(0);
-        pktFromA.setPayload(message.getData());
+        // Set packet
+        packetFromA.setSeqnum(nextSeqNum);
+        packetFromA.setAcknum(0);
+        packetFromA.setPayload(message.getData());
 
         checksum += nextSeqNum;
-        checksum += pktFromA.getAcknum();
-        for (int i = 0; i < pktFromA.getPayload().length(); i++)
-            checksum += (int) pktFromA.getPayload().charAt(i);
+        checksum += packetFromA.getAcknum();
+        for (int i = 0; i < packetFromA.getPayload().length(); i++)
+            checksum += (int) packetFromA.getPayload().charAt(i);
 
-        pktFromA.setChecksum(checksum);
+        packetFromA.setChecksum(checksum);
 
         tail++;
-        send_buffer.add(pktFromA);
+        sendBuffer.add(packetFromA);
 
-        int temp = nextSeqNum-snd_base+head;
+        int temp = nextSeqNum- sndBase +head;
 
-        while(nextSeqNum < snd_base + WindowSize && temp != tail+1)
+        while(nextSeqNum < sndBase + WindowSize && temp != tail+ 1)
         {
             System.out.println("temp: " + temp);
-            Sender_Window[(nextSeqNum-1) % WindowSize].setSeqNum((send_buffer.get(temp)).getSeqnum());
-            Sender_Window[(nextSeqNum-1) % WindowSize].setAck(false);
-            toLayer3(A, send_buffer.get(temp));
+            senderWindow[(nextSeqNum- 1) % WindowSize].setSeqNum((sendBuffer.get(temp)).getSeqnum());
+            senderWindow[(nextSeqNum- 1) % WindowSize].setAck(false);
+            toLayer3(A, sendBuffer.get(temp));
 
-            A_Transition++;
+            aTransition++;
 
-            if(snd_base == nextSeqNum)
+            if(sndBase == nextSeqNum)
             {
                 startTimer(A, RxmtInterval);
                 Timer timer = new Timer();
                 timerLine.add(timer);
-                timer.setSndRTT(getTime());
-                timer.setSndCom(getTime());
-                timer.setSeqNum(nextSeqNum);
+                timer.setSendRTT(getTime());
+                timer.setSendCom(getTime());
+                timer.setSequenceNumber(nextSeqNum);
             }
 
             nextSeqNum++;
             temp++;
         }
-        System.out.println("aOutput end.");
     }
 
     // This routine will be called whenever a packet sent from the B-side
@@ -140,8 +203,6 @@ public class StudentNetworkSimulator extends NetworkSimulator
     // sent from the B-side.
     protected void aInput(Packet packet)
     {
-        System.out.println("aInput start.");
-
         int checksum;
         checksum = packet.getSeqnum();
         checksum += packet.getAcknum();
@@ -150,22 +211,22 @@ public class StudentNetworkSimulator extends NetworkSimulator
 
         if(packet.getChecksum() == checksum)
         {
-            if (packet.getAcknum() == snd_base)
+            if (packet.getAcknum() == sndBase)
             {
-                int iter = snd_base + 1;
+                int iter = sndBase + 1;
                 timeoutCount = 0;
                 head++;
 
-                while (Sender_Window[(iter - 1) % WindowSize].getSeqNum() != -1 && Sender_Window[(iter - 1) % WindowSize].getAck())
+                while (senderWindow[(iter - 1) % WindowSize].getSeqNum() != - 1 && senderWindow[(iter - 1) % WindowSize].getAck())
                 {
-                    Sender_Window[(iter - 1) % WindowSize].setSeqNum(-1);
-                    Sender_Window[(iter - 1) % WindowSize].setAck(false);
+                    senderWindow[(iter - 1) % WindowSize].setSeqNum(- 1);
+                    senderWindow[(iter - 1) % WindowSize].setAck(false);
                     iter++;
                     head++;
                 }
-                snd_base = iter;
+                sndBase = iter;
 
-                if (snd_base == nextSeqNum)
+                if (sndBase == nextSeqNum)
                 {
                     stopTimer(A);
 
@@ -173,10 +234,10 @@ public class StudentNetworkSimulator extends NetworkSimulator
 
                     for(Timer e : timerLine)
                     {
-                        if(e.getSeqNum() == packet.getAcknum())
+                        if(e.getSequenceNumber() == packet.getAcknum())
                         {
-                            e.setRcvCom(getTime());
-                            e.setRcvRTT(getTime());
+                            e.setReceiveCom(getTime());
+                            e.setReceiveRTT(getTime());
                         }
                     }
                 }
@@ -186,10 +247,10 @@ public class StudentNetworkSimulator extends NetworkSimulator
                     startTimer(A, RxmtInterval);
                 }
             }
-            else if(packet.getAcknum() > snd_base && packet.getAcknum() < nextSeqNum)
+            else if(packet.getAcknum() > sndBase && packet.getAcknum() < nextSeqNum)
             {
-                Sender_Window[(packet.getAcknum() - 1) % WindowSize].setSeqNum(packet.getAcknum());
-                Sender_Window[(packet.getAcknum() - 1) % WindowSize].setAck(true);
+                senderWindow[(packet.getAcknum() - 1) % WindowSize].setSeqNum(packet.getAcknum());
+                senderWindow[(packet.getAcknum() - 1) % WindowSize].setAck(true);
             }
         }
         else
@@ -197,9 +258,6 @@ public class StudentNetworkSimulator extends NetworkSimulator
             corrupt++;
             System.out.println("A: Corrupt packet received.");
         }
-
-
-        System.out.println("aInput end.");
     }
 
     // This routine will be called when A's timer expires (thus generating a
@@ -208,18 +266,16 @@ public class StudentNetworkSimulator extends NetworkSimulator
     // for how the timer is started and stopped.
     protected void aTimerInterrupt()
     {
-        System.out.println("aTimerInterrupt start.");
+        aTransition++;
 
-        A_Transition++;
-
-        toLayer3(A, send_buffer.get(head));
+        toLayer3(A, sendBuffer.get(head));
         startTimer(A, RxmtInterval);
 
         for(Timer e : timerLine)
         {
-            if(e.getSeqNum() == send_buffer.get(head).getSeqnum())
+            if(e.getSequenceNumber() == sendBuffer.get(head).getSeqnum())
             {
-                e.setSndRTT(getTime());
+                e.setSendRTT(getTime());
             }
         }
 
@@ -229,29 +285,27 @@ public class StudentNetworkSimulator extends NetworkSimulator
         for(int i = 1; i < timeoutCount && i < WindowSize; i++)
         {
             //New line maybe not correct to work
-            if(temp == send_buffer.size())
+            if(temp == sendBuffer.size())
                 break;
 
-            if(Sender_Window[(snd_base+i-1) % WindowSize].getSeqNum() != -1 && !Sender_Window[(snd_base+i-1) % WindowSize].getAck())
+            if(senderWindow[(sndBase +i- 1) % WindowSize].getSeqNum() != - 1 && !senderWindow[(sndBase +i- 1) % WindowSize].getAck())
             {
-                toLayer3(A, send_buffer.get(temp));
+                toLayer3(A, sendBuffer.get(temp));
 
                 retNum++;
 
-                A_Transition++;
+                aTransition++;
 
                 for(Timer e : timerLine)
                 {
-                    if(e.getSeqNum() == send_buffer.get(temp).getSeqnum())
+                    if(e.getSequenceNumber() == sendBuffer.get(temp).getSeqnum())
                     {
-                        e.setSndRTT(getTime());
+                        e.setSendRTT(getTime());
                     }
                 }
             }
             temp++;
         }
-
-        System.out.println("aTimerInterrupt end.");
     }
 
     // This routine will be called once, before any of your other A-side
@@ -260,20 +314,17 @@ public class StudentNetworkSimulator extends NetworkSimulator
     // of entity A).
     protected void aInit()
     {
-        System.out.println("aInit start.");
-
         head = FirstSeqNo;
-        tail = -1;
-        snd_base = 1;
+        tail = - 1;
+        sndBase = 1;
         nextSeqNum = 1;
-        send_buffer = new ArrayList<>();
-        pktFromA = new Packet(0, 0, 0, "");
+        sendBuffer = new ArrayList<>();
+        packetFromA = new Packet(0, 0, 0, null);
 
-        Sender_Window = new ACKpkt[WindowSize];
-        for(int i = 0; i < WindowSize; i++)
-            Sender_Window[i] = new ACKpkt();
-
-        System.out.println("aInit end.");
+        senderWindow = new ACKpkt[WindowSize];
+        for(int i = 0; i < WindowSize; i++) {
+            senderWindow[i] = new ACKpkt();
+        }
     }
 
     // This routine will be called whenever a packet sent from the B-side
@@ -282,9 +333,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
     // sent from the A-side.
     protected void bInput(Packet packet)
     {
-        System.out.println("bInput start.");
-
-        B_Transition++;
+        bTransition++;
 
         int checksum;
         checksum = packet.getSeqnum();
@@ -300,33 +349,33 @@ public class StudentNetworkSimulator extends NetworkSimulator
         }
 
 
-        if(packet.getSeqnum() == rcv_base)
+        if(packet.getSeqnum() == rcvBase)
         {
             toLayer5(packet.getPayload());
 
-            B_Application++;
+            bApplication++;
 
-            int iter = rcv_base+1, rcv_base_increase = 1;
-            while(rcv_buffer[(iter-1) % WindowSize].getSeqnum() != -1)
+            int iter = rcvBase + 1, rcvBaseIncrease = 1;
+            while(rcvBuffer[(iter- 1) % WindowSize].getSeqnum() != - 1)
             {
-                toLayer5(rcv_buffer[(iter-1) % WindowSize].getPayload());
+                toLayer5(rcvBuffer[(iter- 1) % WindowSize].getPayload());
 
-                B_Application++;
+                bApplication++;
 
-                rcv_base_increase++;
-                rcv_buffer[(iter-1) % WindowSize].setSeqnum(-1);
+                rcvBaseIncrease++;
+                rcvBuffer[(iter- 1) % WindowSize].setSeqnum(- 1);
                 iter++;
             }
-            rcv_base += rcv_base_increase;
+            rcvBase += rcvBaseIncrease;
         }
-        else if(packet.getSeqnum() > rcv_base && packet.getSeqnum() < rcv_base+WindowSize)
+        else if(packet.getSeqnum() > rcvBase && packet.getSeqnum() < rcvBase + WindowSize)
         {
-            int index = (packet.getSeqnum()-1) % WindowSize;
+            int index = (packet.getSeqnum()- 1) % WindowSize;
 
-            if(rcv_buffer[index].getSeqnum() != packet.getSeqnum())
-                rcv_buffer[index] = packet;
+            if(rcvBuffer[index].getSeqnum() != packet.getSeqnum())
+                rcvBuffer[index] = packet;
         }
-        else if(packet.getSeqnum() >= rcv_base-WindowSize && packet.getSeqnum() < rcv_base)
+        else if(packet.getSeqnum() >= rcvBase - WindowSize && packet.getSeqnum() < rcvBase)
         {
             System.out.println("B: Drop this received packet for out of window.");
         }
@@ -336,14 +385,12 @@ public class StudentNetworkSimulator extends NetworkSimulator
             return;
         }
 
-        pktFromB.setSeqnum(0);
-        pktFromB.setAcknum(packet.getSeqnum());
-        pktFromB.setPayload("");
-        pktFromB.setChecksum(packet.getSeqnum());
+        packetFromB.setSeqnum(0);
+        packetFromB.setAcknum(packet.getSeqnum());
+        packetFromB.setPayload(null);
+        packetFromB.setChecksum(packet.getSeqnum());
 
-        toLayer3(B, pktFromB);
-
-        System.out.println("bInput end.");
+        toLayer3(B, packetFromB);
     }
 
     // This routine will be called once, before any of your other B-side
@@ -352,46 +399,43 @@ public class StudentNetworkSimulator extends NetworkSimulator
     // of entity B).
     protected void bInit()
     {
-        System.out.println("bInit start.");
 
-        rcv_base = 1;
-        pktFromB = new Packet(0, 0, 0, "");
-        rcv_buffer = new Packet[WindowSize];
+        rcvBase = 1;
+        packetFromB = new Packet(0, 0, 0, null);
+        rcvBuffer = new Packet[WindowSize];
         for(int i = 0; i < WindowSize; i++)
-            rcv_buffer[i] = new Packet(-1, 0, 0, "");
-
-        System.out.println("bInit end.");
+            rcvBuffer[i] = new Packet(- 1, 0, 0, null);
     }
 
     // Use to print final statistics
-    protected void Simulation_done()
+    protected void simulationFinished()
     {
-        totaltime = getTime();
+        double totaltime = getTime();
 
         double sumRtt = 0;
         double sumCom = 0;
 
         for(Timer e : timerLine)
         {
-            if(e.getRcvCom() != 0 && e.getRcvRTT() != 0)
+            if(e.getReceiveCom() != 0 && e.getReceiveRTT() != 0)
             {
-                double rtt = e.getRcvRTT() - e.getSndRTT();
-                double com = e.getRcvCom() - e.getSndCom();
+                double rtt = e.getReceiveRTT() - e.getSendRTT();
+                double com = e.getReceiveCom() - e.getSendCom();
                 sumRtt += rtt;
                 sumCom += com;
             }
         }
-        avgRTT = sumRtt / timerLine.size();
-        avgComTime = sumCom / timerLine.size();
+        double avgRTT = sumRtt / timerLine.size();
+        double avgComTime = sumCom / timerLine.size();
 
         System.out.println();
         System.out.println("Simulation finished.");
         System.out.println("Protocol: SR result:");
 
-        System.out.println(A_Application + " packets sent from application layer of the sender.");
-        System.out.println(A_Transition + " packets sent from the transport layer of the sender.");
-        System.out.println(B_Transition + " packets received at the transport layer of receiver.");
-        System.out.println(B_Application + " packets received at the application layer of the receiver.");
+        System.out.println(aApplication + " packets sent from application layer of the sender.");
+        System.out.println(aTransition + " packets sent from the transport layer of the sender.");
+        System.out.println(bTransition + " packets received at the transport layer of receiver.");
+        System.out.println(bApplication + " packets received at the application layer of the receiver.");
 
         System.out.println("Total time cost: " + totaltime);
 
@@ -403,8 +447,8 @@ public class StudentNetworkSimulator extends NetworkSimulator
         System.out.println("Retransmission time: " + retNum);
         System.out.println("Corrupt packet number: " + corrupt);
 
-        System.out.println("Throughput: " + B_Transition / totaltime);
-        System.out.println("Goodput: " + B_Application / totaltime);
+        System.out.println("Throughput: " + bTransition / totaltime);
+        System.out.println("Goodput: " + bApplication / totaltime);
 
     }
 }
