@@ -110,18 +110,18 @@ public class StudentNetworkSimulator extends NetworkSimulator
     // For Sender
     private int head;
     private int tail;
-    private int sndBase;
-    private int nextSeqNum;
-    private ACKpkt[] senderWindow;
+    private int sendBase;
+    private int nextSequenceNumber;
+    private AcknowledgedPacket[] senderWindow;
     private ArrayList<Packet> sendBuffer;
     private int timeoutCount;
 
     // For Receiver
-    private int rcvBase;
+    private int receiveBase;
     private Packet[] rcvBuffer;
 
-    // ACKed packets number
-    private int ACKed = 0;
+    // acknowledged packets number
+    private int acknowledged = 0;
 
     // Variables for counting loss and corruption packets and rate
     private int corrupt = 0;
@@ -157,11 +157,11 @@ public class StudentNetworkSimulator extends NetworkSimulator
         int checksum = 0;
 
         // Set packet
-        packetFromA.setSeqnum(nextSeqNum);
+        packetFromA.setSeqnum(nextSequenceNumber);
         packetFromA.setAcknum(0);
         packetFromA.setPayload(message.getData());
 
-        checksum += nextSeqNum;
+        checksum += nextSequenceNumber;
         checksum += packetFromA.getAcknum();
         for (int i = 0; i < packetFromA.getPayload().length(); i++)
             checksum += (int) packetFromA.getPayload().charAt(i);
@@ -171,28 +171,32 @@ public class StudentNetworkSimulator extends NetworkSimulator
         tail++;
         sendBuffer.add(packetFromA);
 
-        int temp = nextSeqNum- sndBase +head;
+        int temp = nextSequenceNumber - sendBase + head;
 
-        while(nextSeqNum < sndBase + WindowSize && temp != tail+ 1)
+        // Send the message if necessary
+        while(nextSequenceNumber < sendBase + WindowSize && temp != tail + 1)
         {
             System.out.println("temp: " + temp);
-            senderWindow[(nextSeqNum- 1) % WindowSize].setSeqNum((sendBuffer.get(temp)).getSeqnum());
-            senderWindow[(nextSeqNum- 1) % WindowSize].setAck(false);
+            senderWindow[(nextSequenceNumber - 1) % WindowSize].setSeqNum((sendBuffer.get(temp)).getSeqnum());
+            senderWindow[(nextSequenceNumber - 1) % WindowSize].setAck(false);
+
+            // Send packet to layer 3
             toLayer3(A, sendBuffer.get(temp));
 
             aTransition++;
 
-            if(sndBase == nextSeqNum)
+            if(sendBase == nextSequenceNumber)
             {
                 startTimer(A, RxmtInterval);
+                // Start timer
                 Timer timer = new Timer();
                 timerLine.add(timer);
                 timer.setSendRTT(getTime());
                 timer.setSendCom(getTime());
-                timer.setSequenceNumber(nextSeqNum);
+                timer.setSequenceNumber(nextSequenceNumber);
             }
 
-            nextSeqNum++;
+            nextSequenceNumber++;
             temp++;
         }
     }
@@ -203,17 +207,20 @@ public class StudentNetworkSimulator extends NetworkSimulator
     // sent from the B-side.
     protected void aInput(Packet packet)
     {
+        // Compute checksum
         int checksum;
         checksum = packet.getSeqnum();
         checksum += packet.getAcknum();
         for(int i = 0; i < packet.getPayload().length(); i++)
             checksum += (int)packet.getPayload().charAt(i);
 
+        // Packet has to be dealt with
         if(packet.getChecksum() == checksum)
         {
-            if (packet.getAcknum() == sndBase)
+            // First acknowledgement
+            if (packet.getAcknum() == sendBase)
             {
-                int iter = sndBase + 1;
+                int iter = sendBase + 1;
                 timeoutCount = 0;
                 head++;
 
@@ -224,13 +231,15 @@ public class StudentNetworkSimulator extends NetworkSimulator
                     iter++;
                     head++;
                 }
-                sndBase = iter;
+                sendBase = iter;
 
-                if (sndBase == nextSeqNum)
+                // Reading complete
+                if (sendBase == nextSequenceNumber)
                 {
+                    // Finally stop timer
                     stopTimer(A);
 
-                    ACKed++;
+                    acknowledged++;
 
                     for(Timer e : timerLine)
                     {
@@ -243,16 +252,21 @@ public class StudentNetworkSimulator extends NetworkSimulator
                 }
                 else
                 {
+                    // Stop current timer
                     stopTimer(A);
+
+                    // Start a new one
                     startTimer(A, RxmtInterval);
                 }
             }
-            else if(packet.getAcknum() > sndBase && packet.getAcknum() < nextSeqNum)
+            // Set packet ready for treatment
+            else if(packet.getAcknum() > sendBase && packet.getAcknum() < nextSequenceNumber)
             {
                 senderWindow[(packet.getAcknum() - 1) % WindowSize].setSeqNum(packet.getAcknum());
                 senderWindow[(packet.getAcknum() - 1) % WindowSize].setAck(true);
             }
         }
+        // Packet is corrupt
         else
         {
             corrupt++;
@@ -268,6 +282,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
     {
         aTransition++;
 
+        // Send to layer 3
         toLayer3(A, sendBuffer.get(head));
         startTimer(A, RxmtInterval);
 
@@ -284,12 +299,13 @@ public class StudentNetworkSimulator extends NetworkSimulator
         int temp = head + 1;
         for(int i = 1; i < timeoutCount && i < WindowSize; i++)
         {
-            //New line maybe not correct to work
+            // New line maybe not correct to work
             if(temp == sendBuffer.size())
                 break;
 
-            if(senderWindow[(sndBase +i- 1) % WindowSize].getSeqNum() != - 1 && !senderWindow[(sndBase +i- 1) % WindowSize].getAck())
+            if(senderWindow[(sendBase + i - 1) % WindowSize].getSeqNum() != - 1 && !senderWindow[(sendBase + i - 1) % WindowSize].getAck())
             {
+                // Send to layer 3
                 toLayer3(A, sendBuffer.get(temp));
 
                 retNum++;
@@ -316,14 +332,14 @@ public class StudentNetworkSimulator extends NetworkSimulator
     {
         head = FirstSeqNo;
         tail = - 1;
-        sndBase = 1;
-        nextSeqNum = 1;
+        sendBase = 1;
+        nextSequenceNumber = 1;
         sendBuffer = new ArrayList<>();
         packetFromA = new Packet(0, 0, 0, null);
 
-        senderWindow = new ACKpkt[WindowSize];
+        senderWindow = new AcknowledgedPacket[WindowSize];
         for(int i = 0; i < WindowSize; i++) {
-            senderWindow[i] = new ACKpkt();
+            senderWindow[i] = new AcknowledgedPacket();
         }
     }
 
@@ -348,43 +364,49 @@ public class StudentNetworkSimulator extends NetworkSimulator
             return;
         }
 
-
-        if(packet.getSeqnum() == rcvBase)
+        // If packet has to be dealt with
+        if(packet.getSeqnum() == receiveBase)
         {
+            // Send to layer 5
             toLayer5(packet.getPayload());
 
             bApplication++;
 
-            int iter = rcvBase + 1, rcvBaseIncrease = 1;
+            int iter = receiveBase + 1;
+            int receiveBaseIncrease = 1;
             while(rcvBuffer[(iter- 1) % WindowSize].getSeqnum() != - 1)
             {
                 toLayer5(rcvBuffer[(iter- 1) % WindowSize].getPayload());
 
                 bApplication++;
 
-                rcvBaseIncrease++;
+                receiveBaseIncrease++;
                 rcvBuffer[(iter- 1) % WindowSize].setSeqnum(- 1);
                 iter++;
             }
-            rcvBase += rcvBaseIncrease;
+            receiveBase += receiveBaseIncrease;
         }
-        else if(packet.getSeqnum() > rcvBase && packet.getSeqnum() < rcvBase + WindowSize)
+        // Set packet ready for treatment
+        else if(packet.getSeqnum() > receiveBase && packet.getSeqnum() < receiveBase + WindowSize)
         {
             int index = (packet.getSeqnum()- 1) % WindowSize;
 
             if(rcvBuffer[index].getSeqnum() != packet.getSeqnum())
                 rcvBuffer[index] = packet;
         }
-        else if(packet.getSeqnum() >= rcvBase - WindowSize && packet.getSeqnum() < rcvBase)
+        // If packet is out of window
+        else if(packet.getSeqnum() >= receiveBase - WindowSize && packet.getSeqnum() < receiveBase)
         {
             System.out.println("B: Drop this received packet for out of window.");
         }
+        // Otherwise, unknown error
         else
         {
             System.out.println("B: Invalid packet received.");
             return;
         }
 
+        // Send final packet to layer 3
         packetFromB.setSeqnum(0);
         packetFromB.setAcknum(packet.getSeqnum());
         packetFromB.setPayload(null);
@@ -399,8 +421,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
     // of entity B).
     protected void bInit()
     {
-
-        rcvBase = 1;
+        receiveBase = 1;
         packetFromB = new Packet(0, 0, 0, null);
         rcvBuffer = new Packet[WindowSize];
         for(int i = 0; i < WindowSize; i++)
@@ -442,7 +463,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
         System.out.println("Average RTT: " + avgRTT);
         System.out.println("Average communication time: " + avgComTime);
 
-        System.out.println("ACKnowledged packets: " + ACKed);
+        System.out.println("ACKnowledged packets: " + acknowledged);
 
         System.out.println("Retransmission time: " + retNum);
         System.out.println("Corrupt packet number: " + corrupt);

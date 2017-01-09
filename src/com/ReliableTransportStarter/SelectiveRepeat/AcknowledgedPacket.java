@@ -1,11 +1,11 @@
 package com.ReliableTransportStarter.SelectiveRepeat;
 
-public class ACKpkt
+public class AcknowledgedPacket
 {
     private int seqNum = -1;
     private boolean acked = false;
 
-    public ACKpkt(){}
+    public AcknowledgedPacket(){}
 
     public int getSeqNum()
         {
@@ -23,8 +23,7 @@ public class ACKpkt
         }
 
     public void setAck(boolean a)
-        {
-            this.acked = a;
-        }
-
+    {
+        this.acked = a;
+    }
 }
