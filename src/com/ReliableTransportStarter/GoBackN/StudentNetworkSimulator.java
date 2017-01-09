@@ -129,13 +129,13 @@ public class StudentNetworkSimulator extends NetworkSimulator
 	private double[] tsent;
     private double[] tackd;
     // int var for tracking next seq # A will send to B
-    private int nextseq = FirstSeqNo;
+    private int nextSequence = FirstSeqNo;
     // int var for keeping track of base of the sending window
     private int base = 1;
     // int var for tracking next seq # B expects to rcv
     private int eseq = 1;
     // init new packet for impending ack transmission later
-	private Packet ackpacket = new Packet(0, 0, 0);
+	private Packet acknowledgedPacket = new Packet(0, 0, 0);
 	// int var for tracking num packets sent
     private int sent = 0; 
     // int var tracking num retransmissions
@@ -153,24 +153,24 @@ public class StudentNetworkSimulator extends NetworkSimulator
     {
     	// Store data from message received in String var for use in payload later
     	String received = message.getData();
-    	if(nextseq < base + WindowSize) {
+    	if(nextSequence < base + WindowSize) {
 		    // Compute checksum for following packet creation
-		 	int checksum = calculateChecksum(nextseq,-1,received);
-			Packet packet = new Packet(nextseq,-1,checksum,received);
+		 	int checksum = calculateChecksum(nextSequence,-1,received);
+			Packet packet = new Packet(nextSequence,-1,checksum,received);
 			
 			// Print String representation of Packet
 	    	System.out.println("aOutput received: " + packet.toString());
 	    	
 			// If we reached end of array...
-			if(nextseq > WindowSize) {
+			if(nextSequence > WindowSize) {
 				System.out.println("Wrapping Around");
 				// Wrap around
-				buffer[nextseq%LimitSeqNo] = packet;
+				buffer[nextSequence %LimitSeqNo] = packet;
 			}
 			
 			// Else, just add new packet to sending buffer (will be removed once acknowledgement received)		
 			else { 
-				buffer[nextseq] = packet; 
+				buffer[nextSequence] = packet;
 			}
 			
 			// Send Packet packet to layer 3 of B
@@ -180,21 +180,21 @@ public class StudentNetworkSimulator extends NetworkSimulator
 			long time1 = System.nanoTime();
 			
 			System.out.println("timesent: " + time1);
-			tsent[nextseq] = time1;
+			tsent[nextSequence] = time1;
 			
 			// Increment sent counter
 			sent++;
 			
 			System.out.println("aOutput snt: " + packet.toString());
 			
-			// If base of window gets slid over but nextseq is not updated
-			if (base==nextseq) {
+			// If base of window gets slid over but nextSequence is not updated
+			if (base== nextSequence) {
 				// Start timeout for A for time specified by delay inputted by user triggering a timeout in which lost packets are retransmitted
 				startTimer(A, RxmtInterval);
 			}
 			
 			// Increase nextseqnum
-			nextseq++;
+			nextSequence++;
 		}
     }
  
@@ -209,7 +209,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
 		double time2 = System.nanoTime();
 		System.out.println("timeakd: "+ time2);
 		
-		tackd[nextseq] = time2;
+		tackd[nextSequence] = time2;
     	// Increase received counter
     	received++;
     	
@@ -232,7 +232,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
     		base = p.getAcknum() + 1;
     		
     		// If we have slid the base of our window over to the next seq #...
-    		if (base==nextseq) {
+    		if (base== nextSequence) {
     			// Stop timer, bc we are where we want to be
     			stopTimer(A);
     		}
@@ -258,14 +258,14 @@ public class StudentNetworkSimulator extends NetworkSimulator
     	startTimer(A, RxmtInterval);
     	
     	// Resend all packets previously sent but not yet acknowledged (waiting in send buffer)
-    	for(int i=base; i<nextseq; i++) {
+    	for(int i = base; i< nextSequence; i++) {
     		// if we are past window...
     		if(i > WindowSize) {
     			// Print String representation of Packet 
     	    	System.out.println("aTimerInterrupt (Wrap): " + buffer[i%LimitSeqNo].toString());
     	    	
     	    	// Print seqnum
-    	    	System.out.println("nextseq = " + nextseq);
+    	    	System.out.println("nextSequence = " + nextSequence);
     	    	toLayer3(A, buffer[i % LimitSeqNo]);
     	    	
     	    	// Increment sent & retransmission counter
@@ -310,7 +310,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
     	System.out.println("bInput received: " + p.toString());
 
     	// Print seqnum
-    	System.out.println("nextseq = " + nextseq);
+    	System.out.println("nextSequence = " + nextSequence);
 
     	// Print seqnum expected
     	System.out.println("eseq = " + eseq);
@@ -342,13 +342,13 @@ public class StudentNetworkSimulator extends NetworkSimulator
     		ackCheck = seq+ack;
 
     		// Update ack packet
-    		ackpacket = new Packet(eseq,ack,ackCheck);
+    		acknowledgedPacket = new Packet(eseq,ack,ackCheck);
 
-    		// Print str of ackpacket
-    		System.out.println("new ackpacket: " + ackpacket.toString());
+    		// Print str of acknowledgedPacket
+    		System.out.println("new acknowledgedPacket: " + acknowledgedPacket.toString());
 
     		// Send ack to layer3
-    		toLayer3(B,ackpacket);
+    		toLayer3(B, acknowledgedPacket);
 
     		// Increase sent count and next expected sequence number
     		sent++;
@@ -361,13 +361,13 @@ public class StudentNetworkSimulator extends NetworkSimulator
     			numCorruptedPackets++;
     		}
     		// If no last packet received (first msg lost), return
-    		if(ackpacket.getSeqnum() <= 0) {
+    		if(acknowledgedPacket.getSeqnum() <= 0) {
     			return;
     		}
     		else {
-	    		// Else, print str of last ackpacket and send to layer3
-	    		System.out.println("last ackpacket: " + ackpacket.toString());
-	    		toLayer3(B,ackpacket);
+	    		// Else, print str of last acknowledgedPacket and send to layer3
+	    		System.out.println("last acknowledgedPacket: " + acknowledgedPacket.toString());
+	    		toLayer3(B, acknowledgedPacket);
     		}
     	}
     		
@@ -379,7 +379,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
 	// of entity B).
 	protected void bInit()
 	{
-		//You probably won't need to put any code in this method.  It is from another assignment.
+		// You probably won't need to put any code in this method.  It is from another assignment.
 	}
 
 	// Translate String 'str' into an int, and add this to seq and ack to generate a checksum
@@ -401,7 +401,6 @@ public class StudentNetworkSimulator extends NetworkSimulator
     	
     	// Add all rtt's to rtt list
     	for(int i = 0; i < tsent.length - 1; i++) {
-
     		// Compute difference in acknowledgement and trans time
     		rtt.add(i, tackd[i]-tsent[i]);
 

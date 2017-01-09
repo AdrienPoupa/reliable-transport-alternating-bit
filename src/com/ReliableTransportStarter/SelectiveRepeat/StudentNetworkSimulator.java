@@ -451,7 +451,6 @@ public class StudentNetworkSimulator extends NetworkSimulator
 
         System.out.println();
         System.out.println("Simulation finished.");
-        System.out.println("Protocol: SR result:");
 
         System.out.println(aApplication + " packets sent from application layer of the sender.");
         System.out.println(aTransition + " packets sent from the transport layer of the sender.");
@@ -463,7 +462,7 @@ public class StudentNetworkSimulator extends NetworkSimulator
         System.out.println("Average RTT: " + avgRTT);
         System.out.println("Average communication time: " + avgComTime);
 
-        System.out.println("ACKnowledged packets: " + acknowledged);
+        System.out.println("Acknowledged packets: " + acknowledged);
 
         System.out.println("Retransmission time: " + retNum);
         System.out.println("Corrupt packet number: " + corrupt);
